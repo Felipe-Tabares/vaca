@@ -116,7 +116,22 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
   };
 
   // Get telegramId from URL params if not in Telegram context (for development)
-  const urlParams = new URLSearchParams(window.location.search);
+  // Support both regular URLs and HashRouter URLs (params after #)
+  const getUrlParams = () => {
+    // First try regular search params
+    if (window.location.search) {
+      return new URLSearchParams(window.location.search);
+    }
+    // For HashRouter, params are after #/path?params
+    const hash = window.location.hash;
+    const queryIndex = hash.indexOf("?");
+    if (queryIndex !== -1) {
+      return new URLSearchParams(hash.substring(queryIndex));
+    }
+    return new URLSearchParams();
+  };
+
+  const urlParams = getUrlParams();
   const telegramIdFromUrl = urlParams.get("telegramId");
   const telegramId = user?.id || (telegramIdFromUrl ? parseInt(telegramIdFromUrl) : null);
 

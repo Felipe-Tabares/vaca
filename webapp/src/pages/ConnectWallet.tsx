@@ -14,11 +14,24 @@ export default function ConnectWallet() {
 
   // Function to save wallet to bot via API (with authentication)
   const saveWalletToBot = async () => {
-    if (!telegramId || !walletAddress) return;
+    console.log("saveWalletToBot called", { telegramId, walletAddress, BOT_API_URL });
+
+    if (!telegramId) {
+      setError("Error: No se pudo obtener tu ID de Telegram. Cierra y vuelve a abrir desde el bot.");
+      return;
+    }
+    if (!walletAddress) {
+      setError("Error: Wallet no conectada.");
+      return;
+    }
+    if (!BOT_API_URL) {
+      setError("Error: API URL no configurada.");
+      return;
+    }
 
     setIsSaving(true);
     try {
-      console.log("Saving wallet to bot API...", { telegramId, walletAddress });
+      console.log("Saving wallet to bot API...", { telegramId, walletAddress, url: `${BOT_API_URL}/api/connect-wallet` });
       const response = await fetch(`${BOT_API_URL}/api/connect-wallet`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
