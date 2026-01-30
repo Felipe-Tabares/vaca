@@ -1,0 +1,20 @@
+{
+  "name": "la-vaquita",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram Mini App for group savings using Openfort embedded wallets",
+  "scripts": {
+    "dev:bot": "cd bot && npm run dev",
+    "dev:webapp": "cd webapp && npm run dev",
+    "dev": "concurrently \"npm run dev:bot\" \"npm run dev:webapp\"",
+    "build:bot": "cd bot && npm run build",
+    "build:webapp": "cd webapp && npm run build",
+    "build": "npm run build:bot && npm run build:webapp"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["telegram", "bot", "openfort", "wallet", "latam", "stablecoins"],
+  "author": "UltravioletaDAO",
+  "license": "MIT"
+}
