@@ -32,7 +32,7 @@ export async function handleStart(ctx: Context) {
   // User needs to connect wallet - show Mini App button
   const keyboard = new InlineKeyboard().webApp(
     "🔗 Conectar Wallet",
-    `${config.webappUrl}?telegramId=${telegramUser.id}`
+    `${config.webappUrl}/#/?telegramId=${telegramUser.id}`
   );
 
   await ctx.reply(welcomeMessage(telegramUser.first_name || "amigo"), {

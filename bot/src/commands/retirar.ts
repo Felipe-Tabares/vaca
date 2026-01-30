@@ -50,7 +50,7 @@ export async function handleRetirar(ctx: Context) {
   // Open Mini App to execute withdrawal
   const keyboard = new InlineKeyboard().webApp(
     "💸 Retirar Fondos",
-    `${config.webappUrl}/withdraw?` +
+    `${config.webappUrl}/#/withdraw?` +
       `telegramId=${telegramUser.id}` +
       `&vaquitaId=${vaquita._id}` +
       `&amount=${vaquita.currentAmount}` +

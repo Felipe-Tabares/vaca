@@ -84,7 +84,7 @@ export async function handleAportar(ctx: Context) {
   // Open Mini App to confirm and execute transaction
   const keyboard = new InlineKeyboard().webApp(
     "💸 Confirmar Aporte",
-    `${config.webappUrl}/contribute?` +
+    `${config.webappUrl}/#/contribute?` +
       `telegramId=${telegramUser.id}` +
       `&contributionId=${contribution._id}` +
       `&amount=${actualAmount}` +

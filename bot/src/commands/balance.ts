@@ -22,7 +22,7 @@ export async function handleBalance(ctx: Context) {
   // Open Mini App to view balance (balance is fetched client-side via Openfort)
   const keyboard = new InlineKeyboard().webApp(
     "💰 Ver Balance",
-    `${config.webappUrl}/balance?telegramId=${telegramUser.id}`
+    `${config.webappUrl}/#/balance?telegramId=${telegramUser.id}`
   );
 
   await ctx.reply(
