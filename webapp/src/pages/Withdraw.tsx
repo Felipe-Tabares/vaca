@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { useOpenfort } from "../lib/openfort";
 import { useTelegram } from "../lib/telegram";
 
+const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
+
 export default function Withdraw() {
   const [searchParams] = useSearchParams();
   const { walletAddress, isLoading: openfortLoading } = useOpenfort();
@@ -51,7 +53,7 @@ export default function Withdraw() {
       // The backend controls the pool wallet and will execute the transfer
       console.log(`Requesting withdrawal of ${amount} USDC to ${walletAddress}`);
 
-      const response = await fetch("/api/withdraw", {
+      const response = await fetch(`${BOT_API_URL}/api/withdraw`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

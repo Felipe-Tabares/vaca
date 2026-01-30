@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { useOpenfort } from "../lib/openfort";
 import { useTelegram } from "../lib/telegram";
 
+const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
+
 export default function Contribute() {
   const [searchParams] = useSearchParams();
   const { sendTransaction, getBalance, isLoading: openfortLoading, walletAddress } = useOpenfort();
@@ -68,7 +70,7 @@ export default function Contribute() {
       console.log("Transaction hash:", txHash);
 
       // Confirm contribution via API (with on-chain verification)
-      const response = await fetch("/api/confirm-contribution", {
+      const response = await fetch(`${BOT_API_URL}/api/confirm-contribution`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

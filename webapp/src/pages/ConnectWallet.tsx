@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useOpenfort } from "../lib/openfort";
 import { useTelegram } from "../lib/telegram";
 
+const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
+
 export default function ConnectWallet() {
   const { isAuthenticated, isLoading, walletAddress, login, error: openfortError } = useOpenfort();
   const { telegramId, initData, closeWebApp, showMainButton } = useTelegram();
@@ -17,7 +19,7 @@ export default function ConnectWallet() {
     setIsSaving(true);
     try {
       console.log("Saving wallet to bot API...", { telegramId, walletAddress });
-      const response = await fetch("/api/connect-wallet", {
+      const response = await fetch(`${BOT_API_URL}/api/connect-wallet`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
