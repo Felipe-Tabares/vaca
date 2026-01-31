@@ -5,25 +5,47 @@ import { useTelegram } from "../lib/telegram";
 const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
 
 export default function ConnectWallet() {
-  const { isAuthenticated, isLoading, walletAddress, login, error: openfortError } = useOpenfort();
+  const { isAuthenticated, isLoading, walletAddress, login, logout, error: openfortError } = useOpenfort();
   const { telegramId, initData, closeWebApp } = useTelegram();
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [hasCleared, setHasCleared] = useState(false);
 
   // Clear cached sessions on mount to ensure fresh wallet creation
   useEffect(() => {
-    console.log("=== ConnectWallet: Clearing cached sessions ===");
-    // Clear all Openfort and vaquita related localStorage
-    const keysToRemove = Object.keys(localStorage).filter(
-      key => key.includes('openfort') || key.includes('shield') || key.includes('vaquita')
-    );
-    keysToRemove.forEach(key => {
-      console.log("Removing localStorage key:", key);
-      localStorage.removeItem(key);
-    });
-  }, []);
+    const clearSessions = async () => {
+      if (hasCleared) return;
+      console.log("=== ConnectWallet: Clearing cached sessions ===");
+
+      // Clear all Openfort and vaquita related localStorage
+      const keysToRemove = Object.keys(localStorage).filter(
+        key => key.includes('openfort') || key.includes('shield') || key.includes('vaquita')
+      );
+      keysToRemove.forEach(key => {
+        console.log("Removing localStorage key:", key);
+        localStorage.removeItem(key);
+      });
+
+      // Force logout from Openfort if authenticated
+      if (isAuthenticated) {
+        console.log("Force logging out existing session...");
+        try {
+          await logout();
+          console.log("Logout successful");
+        } catch (e) {
+          console.log("Logout error:", e);
+        }
+      }
+
+      setHasCleared(true);
+    };
+
+    if (!isLoading) {
+      clearSessions();
+    }
+  }, [isLoading, isAuthenticated, hasCleared, logout]);
 
   // Debug on mount
   useEffect(() => {
