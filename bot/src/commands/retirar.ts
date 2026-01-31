@@ -60,6 +60,7 @@ export async function handleRetirar(ctx: Context) {
     "💸 Retirar Fondos",
     `${config.webappUrl}/#/withdraw?` +
       `wallet=${user.walletAddress}` +
+      `&telegramId=${telegramUser.id}` +
       `&vaquitaId=${vaquita._id}` +
       `&amount=${vaquita.currentAmount}` +
       `&poolWallet=${vaquita.poolWalletAddress || ""}`

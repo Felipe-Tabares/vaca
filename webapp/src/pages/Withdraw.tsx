@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTelegram } from "../lib/telegram";
 
@@ -6,7 +6,7 @@ const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
 
 export default function Withdraw() {
   const [searchParams] = useSearchParams();
-  const { initData, closeWebApp } = useTelegram();
+  const { initData, closeWebApp, telegramId } = useTelegram();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
@@ -21,6 +21,11 @@ export default function Withdraw() {
   const handleWithdraw = async () => {
     if (!vaquitaId) {
       setError("ID de vaquita no encontrado");
+      return;
+    }
+
+    if (!telegramId) {
+      setError("No se pudo identificar tu cuenta de Telegram");
       return;
     }
 
@@ -45,7 +50,7 @@ export default function Withdraw() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vaquitaId,
-          walletAddress, // Pass wallet address instead of telegramId
+          telegramId,
           initData,
         }),
       });
