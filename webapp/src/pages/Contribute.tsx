@@ -39,7 +39,7 @@ async function fetchUSDCBalance(walletAddress: string): Promise<string> {
 
 export default function Contribute() {
   const [searchParams] = useSearchParams();
-  const { sendTransaction } = useOpenfort();
+  const { sendTransaction, isAuthenticated, isLoading: openfortLoading, login, walletAddress: openfortWallet } = useOpenfort();
   const { initData, closeWebApp } = useTelegram();
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -47,6 +47,7 @@ export default function Contribute() {
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<string>("...");
   const [loadingBalance, setLoadingBalance] = useState(true);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   // Get params from URL
   const walletAddress = searchParams.get("wallet");
@@ -69,7 +70,43 @@ export default function Contribute() {
     fetchBalance();
   }, [walletAddress]);
 
+  // Auto-connect Openfort when page loads
+  useEffect(() => {
+    const autoConnect = async () => {
+      if (!openfortLoading && !isAuthenticated && !isConnecting) {
+        console.log("Auto-connecting Openfort...");
+        setIsConnecting(true);
+        try {
+          await login();
+          console.log("Auto-connect successful");
+        } catch (err) {
+          console.error("Auto-connect failed:", err);
+        } finally {
+          setIsConnecting(false);
+        }
+      }
+    };
+    autoConnect();
+  }, [openfortLoading, isAuthenticated]);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    setError(null);
+    try {
+      await login();
+    } catch (err: any) {
+      setError("Error al conectar wallet: " + (err.message || "Intenta de nuevo"));
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
   const handleConfirm = async () => {
+    if (!isAuthenticated) {
+      setError("Primero debes conectar tu wallet");
+      return;
+    }
+
     if (!contributionId || !poolWallet) {
       setError("Datos de transacción incompletos");
       return;
@@ -105,7 +142,7 @@ export default function Contribute() {
           contributionId,
           txHash,
           amount: parseFloat(amount),
-          telegramId: walletAddress, // Use wallet as identifier
+          telegramId: walletAddress,
           initData,
         }),
       });
@@ -125,7 +162,7 @@ export default function Contribute() {
     }
   };
 
-  if (loadingBalance) {
+  if (loadingBalance || openfortLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
@@ -174,7 +211,7 @@ export default function Contribute() {
         </div>
 
         {/* Transaction Details */}
-        <div className="rounded-2xl border p-6 mb-6" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
+        <div className="rounded-2xl border p-6 mb-4" style={{ backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' }}>
           <div className="space-y-4">
             <div>
               <p className="text-sm mb-1" style={{ color: '#9CA3AF' }}>Vaquita</p>
@@ -206,6 +243,32 @@ export default function Contribute() {
           </div>
         </div>
 
+        {/* Wallet connection status */}
+        {!isAuthenticated && !isConnecting && (
+          <div className="rounded-lg p-3 mb-4 text-sm" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+            ⚠️ Necesitas conectar tu wallet para enviar la transacción
+            <button
+              onClick={handleConnect}
+              className="w-full mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg"
+            >
+              Conectar Wallet
+            </button>
+          </div>
+        )}
+
+        {isConnecting && (
+          <div className="rounded-lg p-3 mb-4 text-sm text-center" style={{ backgroundColor: '#EFF6FF', color: '#1E40AF' }}>
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mx-auto mb-2" />
+            Conectando wallet...
+          </div>
+        )}
+
+        {isAuthenticated && (
+          <div className="rounded-lg p-3 mb-4 text-sm" style={{ backgroundColor: '#F0FDF4', color: '#166534' }}>
+            ✅ Wallet conectada: {openfortWallet?.slice(0, 6)}...{openfortWallet?.slice(-4)}
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="rounded-lg p-3 mb-4 text-sm" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
@@ -224,7 +287,7 @@ export default function Contribute() {
         {/* Confirm button */}
         <button
           onClick={handleConfirm}
-          disabled={isProcessing || parseFloat(balance) < parseFloat(amount)}
+          disabled={isProcessing || !isAuthenticated || parseFloat(balance) < parseFloat(amount)}
           className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
         >
           {isProcessing ? "Procesando..." : "Confirmar Aporte"}
