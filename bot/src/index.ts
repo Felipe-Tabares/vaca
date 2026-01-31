@@ -171,7 +171,7 @@ async function main() {
   // =============================================================================
   app.post("/api/connect-wallet", strictLimiter, async (req: Request, res: Response) => {
     try {
-      const { telegramId, walletAddress, initData } = req.body;
+      const { telegramId, walletAddress, openfortUserId, initData } = req.body;
 
       // Validate required fields
       if (!telegramId || !walletAddress) {
@@ -202,12 +202,15 @@ async function main() {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      console.log(`📱 API: Connecting wallet for user ${telegramId}: ${walletAddress}`);
+      console.log(`📱 API: Connecting wallet for user ${telegramId}: ${walletAddress}, openfortUserId: ${openfortUserId}`);
 
-      // Update user in database
+      // Update user in database - save openfortUserId for future Openfort authentication
       const user = await User.findOneAndUpdate(
         { telegramId: Number(telegramId) },
-        { walletAddress },
+        {
+          walletAddress,
+          openfortUserId: openfortUserId ? Number(openfortUserId) : Number(telegramId)
+        },
         { new: true }
       );
 
@@ -216,6 +219,7 @@ async function main() {
         await User.create({
           telegramId: Number(telegramId),
           walletAddress,
+          openfortUserId: openfortUserId ? Number(openfortUserId) : Number(telegramId),
         });
         console.log(`✅ API: Created new user with wallet`);
       } else {

@@ -6,6 +6,7 @@ export interface IUser extends Document {
   firstName?: string;
   // Openfort data (set after webapp auth)
   openfortPlayerId?: string;
+  openfortUserId?: number; // The ID used to create Openfort account (may differ from telegramId for legacy users)
   walletAddress?: string;
   // Timestamps
   createdAt: Date;
@@ -23,6 +24,7 @@ const UserSchema = new Schema<IUser>(
     username: String,
     firstName: String,
     openfortPlayerId: String,
+    openfortUserId: Number,
     walletAddress: String,
   },
   {

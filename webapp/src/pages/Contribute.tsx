@@ -52,7 +52,8 @@ export default function Contribute() {
 
   // Get params from URL
   const walletAddress = searchParams.get("wallet");
-  const telegramIdFromUrl = searchParams.get("telegramId");
+  const openfortUserId = searchParams.get("openfortUserId"); // ID used to create Openfort account
+  const telegramId = searchParams.get("telegramId"); // For Telegram validation
   const amount = searchParams.get("amount") || "0";
   const vaquitaName = searchParams.get("vaquitaName") || "Vaquita";
   const contributionId = searchParams.get("contributionId");
@@ -72,16 +73,15 @@ export default function Contribute() {
     fetchBalance();
   }, [walletAddress]);
 
-  // Auto-connect Openfort when page loads - ALWAYS call login with telegramId
-  // This ensures the correct wallet is used even if a different session exists
+  // Auto-connect Openfort when page loads - use openfortUserId to connect correct wallet
   useEffect(() => {
     const autoConnect = async () => {
-      if (!openfortLoading && telegramIdFromUrl && !hasAttemptedConnect.current) {
+      if (!openfortLoading && openfortUserId && !hasAttemptedConnect.current) {
         hasAttemptedConnect.current = true;
-        console.log("Auto-connecting Openfort with telegramId:", telegramIdFromUrl);
+        console.log("Auto-connecting Openfort with openfortUserId:", openfortUserId);
         setIsConnecting(true);
         try {
-          await login(parseInt(telegramIdFromUrl));
+          await login(parseInt(openfortUserId));
           console.log("Auto-connect successful");
         } catch (err) {
           console.error("Auto-connect failed:", err);
@@ -91,13 +91,13 @@ export default function Contribute() {
       }
     };
     autoConnect();
-  }, [openfortLoading, telegramIdFromUrl, login]);
+  }, [openfortLoading, openfortUserId, login]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
     setError(null);
     try {
-      await login(telegramIdFromUrl ? parseInt(telegramIdFromUrl) : undefined);
+      await login(openfortUserId ? parseInt(openfortUserId) : undefined);
     } catch (err: any) {
       setError("Error al conectar wallet: " + (err.message || "Intenta de nuevo"));
     } finally {
@@ -146,7 +146,7 @@ export default function Contribute() {
           contributionId,
           txHash,
           amount: parseFloat(amount),
-          telegramId: telegramIdFromUrl,
+          telegramId,
           initData,
         }),
       });

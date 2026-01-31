@@ -67,12 +67,17 @@ export default function ConnectWallet() {
       const url = `${BOT_API_URL}/api/connect-wallet`;
       console.log("Fetching:", url);
 
+      // Get the openfortUserId that was used to create the wallet
+      const openfortUserId = localStorage.getItem("vaquita_user_id");
+      console.log("openfortUserId from localStorage:", openfortUserId);
+
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           telegramId,
           walletAddress,
+          openfortUserId: openfortUserId ? parseInt(openfortUserId) : telegramId,
           initData,
         }),
       });
@@ -115,7 +120,9 @@ export default function ConnectWallet() {
     try {
       setIsConnecting(true);
       setError(null);
-      await login();
+      // IMPORTANT: Pass telegramId to create wallet tied to this user
+      console.log("Connecting with telegramId:", telegramId);
+      await login(telegramId || undefined);
     } catch (err: any) {
       setError(err?.message || "Error al conectar. Intenta de nuevo.");
       console.error(err);

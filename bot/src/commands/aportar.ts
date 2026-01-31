@@ -81,11 +81,15 @@ export async function handleAportar(ctx: Context) {
     status: "pending",
   });
 
+  // Use openfortUserId if available (for legacy users), otherwise use telegramId
+  const openfortId = user.openfortUserId || telegramUser.id;
+
   // Open Mini App to confirm and execute transaction
   const keyboard = new InlineKeyboard().webApp(
     "💸 Confirmar Aporte",
     `${config.webappUrl}/#/contribute?` +
       `wallet=${user.walletAddress}` +
+      `&openfortUserId=${openfortId}` +
       `&telegramId=${telegramUser.id}` +
       `&contributionId=${contribution._id}` +
       `&amount=${actualAmount}` +
