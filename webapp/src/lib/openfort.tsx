@@ -164,16 +164,22 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
             console.log("Correct user already logged in, skipping auth");
             alreadyLoggedIn = true;
           } else {
-            // WRONG user logged in - logout first!
-            console.log("WRONG user logged in! Logging out first...");
+            // WRONG user logged in - force complete logout!
+            console.log("WRONG user logged in! Force logout...");
             try {
               await openfort.auth.logout();
               console.log("Logged out previous user");
-              setIsAuthenticated(false);
-              setWalletAddress(null);
             } catch (logoutError) {
-              console.log("Logout error (continuing anyway):", logoutError);
+              console.log("Logout error:", logoutError);
             }
+            // Clear ALL Openfort-related localStorage
+            const keysToRemove = Object.keys(localStorage).filter(
+              key => key.includes('openfort') || key.includes('shield') || key.includes('vaquita')
+            );
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log("Cleared localStorage keys:", keysToRemove);
+            setIsAuthenticated(false);
+            setWalletAddress(null);
           }
         }
       } catch {

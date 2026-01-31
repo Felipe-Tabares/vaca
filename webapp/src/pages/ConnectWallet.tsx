@@ -120,6 +120,8 @@ export default function ConnectWallet() {
     try {
       setIsConnecting(true);
       setError(null);
+      // Clear any old cached session first
+      localStorage.removeItem("vaquita_user_id");
       // IMPORTANT: Pass telegramId to create wallet tied to this user
       console.log("Connecting with telegramId:", telegramId);
       await login(telegramId || undefined);
