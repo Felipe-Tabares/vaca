@@ -11,6 +11,8 @@ import { Openfort, RecoveryMethod, ChainTypeEnum } from "@openfort/openfort-js";
 const OPENFORT_PUBLISHABLE_KEY = import.meta.env.VITE_OPENFORT_PUBLISHABLE_KEY || "";
 const SHIELD_PUBLISHABLE_KEY = import.meta.env.VITE_OPENFORT_SHIELD_PUBLISHABLE_KEY || "";
 const USDC_CONTRACT_ADDRESS = import.meta.env.VITE_USDC_CONTRACT_ADDRESS || "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+// Gas sponsorship policy ID - required for gasless transactions
+const OPENFORT_POLICY_ID = import.meta.env.VITE_OPENFORT_POLICY_ID || "";
 
 // ERC-20 ABI for USDC transfers
 const ERC20_ABI = {
@@ -326,7 +328,16 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
     if (!openfort || !walletAddress) throw new Error("Wallet not connected");
 
     try {
-      const provider = await openfort.embeddedWallet.getEthereumProvider();
+      // IMPORTANT: Pass policy ID to enable gas sponsorship (gasless transactions)
+      const providerOptions: { policy?: string } = {};
+      if (OPENFORT_POLICY_ID) {
+        providerOptions.policy = OPENFORT_POLICY_ID;
+        console.log("Using gas sponsorship policy:", OPENFORT_POLICY_ID);
+      } else {
+        console.warn("No OPENFORT_POLICY_ID configured - transactions will require user to pay gas");
+      }
+
+      const provider = await openfort.embeddedWallet.getEthereumProvider(providerOptions);
       if (!provider) throw new Error("Provider not available");
 
       console.log("Sending USDC transaction:", { to, amount, contract: USDC_CONTRACT_ADDRESS });
