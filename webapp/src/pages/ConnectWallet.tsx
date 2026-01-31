@@ -13,20 +13,35 @@ export default function ConnectWallet() {
   const [saved, setSaved] = useState(false);
   const [hasCleared, setHasCleared] = useState(false);
 
-  // Clear cached sessions on mount to ensure fresh wallet creation
+  // Clear ALL cached sessions on mount to ensure fresh wallet creation
   useEffect(() => {
     const clearSessions = async () => {
       if (hasCleared) return;
-      console.log("=== ConnectWallet: Clearing cached sessions ===");
+      console.log("=== ConnectWallet: FULL CLEAR of cached sessions ===");
 
-      // Clear all Openfort and vaquita related localStorage
+      // Clear all localStorage
       const keysToRemove = Object.keys(localStorage).filter(
-        key => key.includes('openfort') || key.includes('shield') || key.includes('vaquita')
+        key => key.includes('openfort') || key.includes('shield') || key.includes('vaquita') || key.includes('auth')
       );
       keysToRemove.forEach(key => {
         console.log("Removing localStorage key:", key);
         localStorage.removeItem(key);
       });
+
+      // Clear IndexedDB databases (Openfort may use this)
+      if (window.indexedDB) {
+        try {
+          const databases = await window.indexedDB.databases();
+          for (const db of databases) {
+            if (db.name) {
+              console.log("Deleting IndexedDB:", db.name);
+              window.indexedDB.deleteDatabase(db.name);
+            }
+          }
+        } catch (e) {
+          console.log("IndexedDB clear error:", e);
+        }
+      }
 
       // Force logout from Openfort if authenticated
       if (isAuthenticated) {
