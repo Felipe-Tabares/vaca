@@ -1,33 +1,22 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useOpenfort } from "../lib/openfort";
 import { useTelegram } from "../lib/telegram";
 
 const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
 
 export default function Withdraw() {
   const [searchParams] = useSearchParams();
-  const { walletAddress, isLoading: openfortLoading } = useOpenfort();
-  const { telegramId, initData, closeWebApp, showMainButton, hideMainButton } = useTelegram();
+  const { initData, closeWebApp } = useTelegram();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Get params from URL
+  const walletAddress = searchParams.get("wallet");
   const amount = searchParams.get("amount") || "0";
   const vaquitaId = searchParams.get("vaquitaId");
   const poolWallet = searchParams.get("poolWallet");
-
-  useEffect(() => {
-    if (!isComplete) {
-      showMainButton("Retirar Fondos", handleWithdraw);
-    }
-
-    return () => {
-      hideMainButton();
-    };
-  }, [isComplete]);
 
   const handleWithdraw = async () => {
     if (!vaquitaId) {
@@ -49,8 +38,6 @@ export default function Withdraw() {
       setIsProcessing(true);
       setError(null);
 
-      // Request withdrawal via secure API
-      // The backend controls the pool wallet and will execute the transfer
       console.log(`Requesting withdrawal of ${amount} USDC to ${walletAddress}`);
 
       const response = await fetch(`${BOT_API_URL}/api/withdraw`, {
@@ -58,7 +45,7 @@ export default function Withdraw() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           vaquitaId,
-          telegramId,
+          walletAddress, // Pass wallet address instead of telegramId
           initData,
         }),
       });
@@ -70,13 +57,7 @@ export default function Withdraw() {
       }
 
       console.log("Withdrawal initiated:", data);
-
       setIsComplete(true);
-
-      // Show close button
-      showMainButton("Volver al chat", () => {
-        closeWebApp();
-      });
     } catch (err: any) {
       console.error("Withdrawal error:", err);
       setError(err.message || "Error al procesar el retiro. Intenta de nuevo.");
@@ -84,17 +65,6 @@ export default function Withdraw() {
       setIsProcessing(false);
     }
   };
-
-  if (openfortLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-4" />
-          <p style={{ color: '#6B7280' }}>Cargando...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (isComplete) {
     return (
@@ -107,9 +77,15 @@ export default function Withdraw() {
           <p className="mb-4" style={{ color: '#6B7280' }}>
             Se han enviado ${amount} USDC a tu wallet.
           </p>
-          <p className="text-sm" style={{ color: '#9CA3AF' }}>
+          <p className="text-sm mb-6" style={{ color: '#9CA3AF' }}>
             ¡Gracias por usar La Vaquita!
           </p>
+          <button
+            onClick={() => closeWebApp()}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl"
+          >
+            Volver al chat
+          </button>
         </div>
       </div>
     );
@@ -132,7 +108,7 @@ export default function Withdraw() {
           <div className="rounded-lg p-3" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
             <p className="text-xs opacity-80 mb-1">Se enviará a</p>
             <p className="text-sm font-mono truncate">
-              {walletAddress || "Tu wallet"}
+              {walletAddress || "No proporcionada"}
             </p>
           </div>
         </div>
@@ -162,28 +138,34 @@ export default function Withdraw() {
         {/* Error */}
         {error && (
           <div className="rounded-lg p-3 mb-4 text-sm" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
-            {error}
+            ⚠️ {error}
           </div>
         )}
 
         {/* Processing state */}
         {isProcessing && (
-          <div className="text-center">
+          <div className="text-center mb-4">
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-green-500 border-t-transparent mx-auto mb-2" />
             <p className="text-sm" style={{ color: '#6B7280' }}>Procesando retiro...</p>
           </div>
         )}
 
-        {/* Manual button */}
-        {!isProcessing && (
-          <button
-            onClick={handleWithdraw}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors mt-4"
-            disabled={isProcessing}
-          >
-            Confirmar Retiro
-          </button>
-        )}
+        {/* Confirm button */}
+        <button
+          onClick={handleWithdraw}
+          disabled={isProcessing}
+          className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+        >
+          {isProcessing ? "Procesando..." : "Confirmar Retiro"}
+        </button>
+
+        {/* Close button */}
+        <button
+          onClick={() => closeWebApp()}
+          className="w-full mt-3 text-gray-500 text-sm underline"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );

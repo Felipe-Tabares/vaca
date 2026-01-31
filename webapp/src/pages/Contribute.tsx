@@ -4,18 +4,52 @@ import { useOpenfort } from "../lib/openfort";
 import { useTelegram } from "../lib/telegram";
 
 const BOT_API_URL = import.meta.env.VITE_BOT_API_URL || "";
+const USDC_CONTRACT = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
+
+// Fetch USDC balance directly from blockchain
+async function fetchUSDCBalance(walletAddress: string): Promise<string> {
+  try {
+    const functionSelector = "70a08231";
+    const paddedAddress = walletAddress.slice(2).toLowerCase().padStart(64, "0");
+    const data = `0x${functionSelector}${paddedAddress}`;
+
+    const response = await fetch(BASE_SEPOLIA_RPC, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "eth_call",
+        params: [{ to: USDC_CONTRACT, data }, "latest"],
+        id: 1,
+      }),
+    });
+
+    const result = await response.json();
+    if (result.result) {
+      const balanceWei = parseInt(result.result, 16);
+      return (balanceWei / 1_000_000).toFixed(2);
+    }
+    return "0";
+  } catch (err) {
+    console.error("Balance fetch error:", err);
+    return "0";
+  }
+}
 
 export default function Contribute() {
   const [searchParams] = useSearchParams();
-  const { sendTransaction, getBalance, isLoading: openfortLoading, walletAddress } = useOpenfort();
-  const { telegramId, initData, closeWebApp, showMainButton, hideMainButton } = useTelegram();
+  const { sendTransaction } = useOpenfort();
+  const { initData, closeWebApp } = useTelegram();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [balance, setBalance] = useState<string>("0");
+  const [balance, setBalance] = useState<string>("...");
+  const [loadingBalance, setLoadingBalance] = useState(true);
 
   // Get params from URL
+  const walletAddress = searchParams.get("wallet");
   const amount = searchParams.get("amount") || "0";
   const vaquitaName = searchParams.get("vaquitaName") || "Vaquita";
   const contributionId = searchParams.get("contributionId");
@@ -24,21 +58,16 @@ export default function Contribute() {
   // Fetch balance on load
   useEffect(() => {
     const fetchBalance = async () => {
-      const bal = await getBalance();
-      setBalance(bal);
+      if (walletAddress) {
+        const bal = await fetchUSDCBalance(walletAddress);
+        setBalance(bal);
+      } else {
+        setBalance("0");
+      }
+      setLoadingBalance(false);
     };
     fetchBalance();
   }, [walletAddress]);
-
-  useEffect(() => {
-    if (!isComplete) {
-      showMainButton("Confirmar Aporte", handleConfirm);
-    }
-
-    return () => {
-      hideMainButton();
-    };
-  }, [isComplete]);
 
   const handleConfirm = async () => {
     if (!contributionId || !poolWallet) {
@@ -46,7 +75,6 @@ export default function Contribute() {
       return;
     }
 
-    // Validate pool wallet address
     if (!poolWallet || !/^0x[a-fA-F0-9]{40}$/.test(poolWallet)) {
       setError("Pool wallet inválida. La vaquita no tiene wallet configurada.");
       return;
@@ -69,7 +97,7 @@ export default function Contribute() {
       const txHash = await sendTransaction(poolWallet, amount);
       console.log("Transaction hash:", txHash);
 
-      // Confirm contribution via API (with on-chain verification)
+      // Confirm contribution via API
       const response = await fetch(`${BOT_API_URL}/api/confirm-contribution`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -77,7 +105,7 @@ export default function Contribute() {
           contributionId,
           txHash,
           amount: parseFloat(amount),
-          telegramId,
+          telegramId: walletAddress, // Use wallet as identifier
           initData,
         }),
       });
@@ -89,11 +117,6 @@ export default function Contribute() {
       }
 
       setIsComplete(true);
-
-      // Show close button
-      showMainButton("Volver al chat", () => {
-        closeWebApp();
-      });
     } catch (err: any) {
       console.error("Transaction error:", err);
       setError(err.message || "Error al procesar la transacción. Intenta de nuevo.");
@@ -102,7 +125,7 @@ export default function Contribute() {
     }
   };
 
-  if (openfortLoading) {
+  if (loadingBalance) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
@@ -124,9 +147,12 @@ export default function Contribute() {
           <p className="mb-4" style={{ color: '#6B7280' }}>
             Tu contribución de ${amount} USDC ha sido enviada.
           </p>
-          <p className="text-sm" style={{ color: '#9CA3AF' }}>
-            Puedes cerrar esta ventana y volver al chat.
-          </p>
+          <button
+            onClick={() => closeWebApp()}
+            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-xl"
+          >
+            Volver al chat
+          </button>
         </div>
       </div>
     );
@@ -166,7 +192,7 @@ export default function Contribute() {
 
             <div className="border-t pt-4" style={{ borderColor: '#F3F4F6' }}>
               <p className="text-sm mb-1" style={{ color: '#9CA3AF' }}>Pool Wallet</p>
-              <p className="font-mono text-sm break-all" style={{ color: '#4B5563' }}>
+              <p className="font-mono text-xs break-all" style={{ color: '#4B5563' }}>
                 {poolWallet || "No configurada"}
               </p>
             </div>
@@ -183,28 +209,34 @@ export default function Contribute() {
         {/* Error */}
         {error && (
           <div className="rounded-lg p-3 mb-4 text-sm" style={{ backgroundColor: '#FEF2F2', color: '#DC2626' }}>
-            {error}
+            ⚠️ {error}
           </div>
         )}
 
         {/* Processing state */}
         {isProcessing && (
-          <div className="text-center">
+          <div className="text-center mb-4">
             <div className="animate-spin rounded-full h-8 w-8 border-4 border-green-500 border-t-transparent mx-auto mb-2" />
             <p className="text-sm" style={{ color: '#6B7280' }}>Procesando transacción USDC...</p>
           </div>
         )}
 
-        {/* Manual button (backup) */}
-        {!isProcessing && (
-          <button
-            onClick={handleConfirm}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-4 px-6 rounded-xl transition-colors mt-4"
-            disabled={isProcessing}
-          >
-            Confirmar Aporte
-          </button>
-        )}
+        {/* Confirm button */}
+        <button
+          onClick={handleConfirm}
+          disabled={isProcessing || parseFloat(balance) < parseFloat(amount)}
+          className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-xl transition-colors"
+        >
+          {isProcessing ? "Procesando..." : "Confirmar Aporte"}
+        </button>
+
+        {/* Close button */}
+        <button
+          onClick={() => closeWebApp()}
+          className="w-full mt-3 text-gray-500 text-sm underline"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );

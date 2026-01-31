@@ -85,7 +85,7 @@ export async function handleAportar(ctx: Context) {
   const keyboard = new InlineKeyboard().webApp(
     "💸 Confirmar Aporte",
     `${config.webappUrl}/#/contribute?` +
-      `telegramId=${telegramUser.id}` +
+      `wallet=${user.walletAddress}` +
       `&contributionId=${contribution._id}` +
       `&amount=${actualAmount}` +
       `&vaquitaName=${encodeURIComponent(vaquita.name)}` +

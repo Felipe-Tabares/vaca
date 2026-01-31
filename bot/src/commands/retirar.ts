@@ -51,7 +51,7 @@ export async function handleRetirar(ctx: Context) {
   const keyboard = new InlineKeyboard().webApp(
     "💸 Retirar Fondos",
     `${config.webappUrl}/#/withdraw?` +
-      `telegramId=${telegramUser.id}` +
+      `wallet=${user.walletAddress}` +
       `&vaquitaId=${vaquita._id}` +
       `&amount=${vaquita.currentAmount}` +
       `&poolWallet=${vaquita.poolWalletAddress || ""}`
