@@ -51,6 +51,7 @@ export default function Contribute() {
 
   // Get params from URL
   const walletAddress = searchParams.get("wallet");
+  const telegramIdFromUrl = searchParams.get("telegramId");
   const amount = searchParams.get("amount") || "0";
   const vaquitaName = searchParams.get("vaquitaName") || "Vaquita";
   const contributionId = searchParams.get("contributionId");
@@ -70,14 +71,14 @@ export default function Contribute() {
     fetchBalance();
   }, [walletAddress]);
 
-  // Auto-connect Openfort when page loads
+  // Auto-connect Openfort when page loads - use telegramId from URL
   useEffect(() => {
     const autoConnect = async () => {
-      if (!openfortLoading && !isAuthenticated && !isConnecting) {
-        console.log("Auto-connecting Openfort...");
+      if (!openfortLoading && !isAuthenticated && !isConnecting && telegramIdFromUrl) {
+        console.log("Auto-connecting Openfort with telegramId:", telegramIdFromUrl);
         setIsConnecting(true);
         try {
-          await login();
+          await login(parseInt(telegramIdFromUrl));
           console.log("Auto-connect successful");
         } catch (err) {
           console.error("Auto-connect failed:", err);
@@ -87,13 +88,13 @@ export default function Contribute() {
       }
     };
     autoConnect();
-  }, [openfortLoading, isAuthenticated]);
+  }, [openfortLoading, isAuthenticated, telegramIdFromUrl]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
     setError(null);
     try {
-      await login();
+      await login(telegramIdFromUrl ? parseInt(telegramIdFromUrl) : undefined);
     } catch (err: any) {
       setError("Error al conectar wallet: " + (err.message || "Intenta de nuevo"));
     } finally {

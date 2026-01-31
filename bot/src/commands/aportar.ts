@@ -86,6 +86,7 @@ export async function handleAportar(ctx: Context) {
     "💸 Confirmar Aporte",
     `${config.webappUrl}/#/contribute?` +
       `wallet=${user.walletAddress}` +
+      `&telegramId=${telegramUser.id}` +
       `&contributionId=${contribution._id}` +
       `&amount=${actualAmount}` +
       `&vaquitaName=${encodeURIComponent(vaquita.name)}` +
