@@ -19,10 +19,10 @@ export async function handleBalance(ctx: Context) {
     return;
   }
 
-  // Open Mini App to view balance (balance is fetched client-side via Openfort)
+  // Open Mini App to view balance - pass wallet address directly
   const keyboard = new InlineKeyboard().webApp(
     "💰 Ver Balance",
-    `${config.webappUrl}/#/balance?telegramId=${telegramUser.id}`
+    `${config.webappUrl}/#/balance?wallet=${user.walletAddress}`
   );
 
   await ctx.reply(
