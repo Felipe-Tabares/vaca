@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useOpenfort } from "../lib/openfort";
 import { useTelegram } from "../lib/telegram";
@@ -48,6 +48,7 @@ export default function Contribute() {
   const [balance, setBalance] = useState<string>("...");
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
+  const hasAttemptedConnect = useRef(false);
 
   // Get params from URL
   const walletAddress = searchParams.get("wallet");
@@ -71,10 +72,12 @@ export default function Contribute() {
     fetchBalance();
   }, [walletAddress]);
 
-  // Auto-connect Openfort when page loads - use telegramId from URL
+  // Auto-connect Openfort when page loads - ALWAYS call login with telegramId
+  // This ensures the correct wallet is used even if a different session exists
   useEffect(() => {
     const autoConnect = async () => {
-      if (!openfortLoading && !isAuthenticated && !isConnecting && telegramIdFromUrl) {
+      if (!openfortLoading && telegramIdFromUrl && !hasAttemptedConnect.current) {
+        hasAttemptedConnect.current = true;
         console.log("Auto-connecting Openfort with telegramId:", telegramIdFromUrl);
         setIsConnecting(true);
         try {
@@ -88,7 +91,7 @@ export default function Contribute() {
       }
     };
     autoConnect();
-  }, [openfortLoading, isAuthenticated, telegramIdFromUrl]);
+  }, [openfortLoading, telegramIdFromUrl, login]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
