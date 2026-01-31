@@ -130,47 +130,70 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       setError(null);
 
-      // Check if already authenticated
+      // Generate unique ID for user
+      let uniqueId = telegramId;
+      if (!uniqueId) {
+        const storedId = localStorage.getItem("vaquita_user_id");
+        if (storedId) {
+          uniqueId = parseInt(storedId);
+        } else {
+          uniqueId = Date.now();
+          localStorage.setItem("vaquita_user_id", uniqueId.toString());
+        }
+      } else {
+        // If telegramId is provided, store it
+        localStorage.setItem("vaquita_user_id", uniqueId.toString());
+      }
+
+      const expectedEmail = `vaquita.user.${uniqueId}@gmail.com`;
+      const password = `VaquitaSecure_${uniqueId}_Pass123!`;
+
+      console.log("=== LOGIN START ===");
+      console.log("Expected email for telegramId:", expectedEmail);
+
+      // Check if already authenticated with the CORRECT user
       let alreadyLoggedIn = false;
       try {
         const existingUser = await openfort.user.get();
         if (existingUser) {
-          console.log("User already logged in:", existingUser.email);
-          alreadyLoggedIn = true;
+          console.log("Existing user email:", existingUser.email);
+          console.log("Expected email:", expectedEmail);
+
+          if (existingUser.email === expectedEmail) {
+            // Correct user already logged in
+            console.log("Correct user already logged in, skipping auth");
+            alreadyLoggedIn = true;
+          } else {
+            // WRONG user logged in - logout first!
+            console.log("WRONG user logged in! Logging out first...");
+            try {
+              await openfort.auth.logout();
+              console.log("Logged out previous user");
+              setIsAuthenticated(false);
+              setWalletAddress(null);
+            } catch (logoutError) {
+              console.log("Logout error (continuing anyway):", logoutError);
+            }
+          }
         }
       } catch {
         // Not logged in, continue with auth
+        console.log("No existing session found");
       }
 
       if (!alreadyLoggedIn) {
-        // Generate unique ID for user
-        let uniqueId = telegramId;
-        if (!uniqueId) {
-          const storedId = localStorage.getItem("vaquita_user_id");
-          if (storedId) {
-            uniqueId = parseInt(storedId);
-          } else {
-            uniqueId = Date.now();
-            localStorage.setItem("vaquita_user_id", uniqueId.toString());
-          }
-        }
-
-        const email = `vaquita.user.${uniqueId}@gmail.com`;
-        const password = `VaquitaSecure_${uniqueId}_Pass123!`;
-
-        console.log("=== LOGIN START ===");
-        console.log("Email:", email);
+        console.log("Authenticating with email:", expectedEmail);
 
         // Step 1: Authenticate with email/password (using auth API)
         try {
           console.log("Trying signup via auth API...");
-          await openfort.auth.signUpWithEmailPassword({ email, password });
+          await openfort.auth.signUpWithEmailPassword({ email: expectedEmail, password });
           console.log("Signup successful");
         } catch (signupError: any) {
           console.log("Signup failed:", signupError?.message);
           try {
             console.log("Trying login via auth API...");
-            await openfort.auth.logInWithEmailPassword({ email, password });
+            await openfort.auth.logInWithEmailPassword({ email: expectedEmail, password });
             console.log("Login successful");
           } catch (loginError: any) {
             console.error("Login also failed:", loginError);
@@ -186,9 +209,8 @@ export function OpenfortProvider({ children }: { children: ReactNode }) {
       await openfort.waitForInitialization();
       console.log("SDK initialized");
 
-      // Generate recovery password based on stored ID
-      const storedId = localStorage.getItem("vaquita_user_id") || Date.now().toString();
-      const recoveryPassword = `VaquitaRecovery_${storedId}_Secure!`;
+      // Generate recovery password based on the current uniqueId
+      const recoveryPassword = `VaquitaRecovery_${uniqueId}_Secure!`;
 
       // Step 2: Configure embedded wallet with password recovery
       console.log("Configuring embedded wallet...");

@@ -143,7 +143,7 @@ export default function Contribute() {
           contributionId,
           txHash,
           amount: parseFloat(amount),
-          telegramId: walletAddress,
+          telegramId: telegramIdFromUrl,
           initData,
         }),
       });
