@@ -34,6 +34,12 @@ export async function handleRetirar(ctx: Context) {
 
     if (activeVaquita) {
       const remaining = activeVaquita.goalAmount - activeVaquita.currentAmount;
+      if (remaining <= 0) {
+        // Goal reached but status wasn't updated - fix it now
+        await Vaquita.findByIdAndUpdate(activeVaquita._id, { status: "completed" });
+        // Recursively call to show withdrawal option
+        return handleRetirar(ctx);
+      }
       await ctx.reply(
         `⏳ Tu vaquita "${activeVaquita.name}" aún no alcanza la meta.\n\n` +
           `💰 Pool: $${activeVaquita.currentAmount.toFixed(2)} / $${activeVaquita.goalAmount.toFixed(2)}\n` +
