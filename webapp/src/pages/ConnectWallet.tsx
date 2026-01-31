@@ -12,6 +12,19 @@ export default function ConnectWallet() {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  // Clear cached sessions on mount to ensure fresh wallet creation
+  useEffect(() => {
+    console.log("=== ConnectWallet: Clearing cached sessions ===");
+    // Clear all Openfort and vaquita related localStorage
+    const keysToRemove = Object.keys(localStorage).filter(
+      key => key.includes('openfort') || key.includes('shield') || key.includes('vaquita')
+    );
+    keysToRemove.forEach(key => {
+      console.log("Removing localStorage key:", key);
+      localStorage.removeItem(key);
+    });
+  }, []);
+
   // Debug on mount
   useEffect(() => {
     console.log("=== ConnectWallet Debug ===");
