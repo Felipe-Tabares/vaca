@@ -19,35 +19,37 @@ export async function handleRetirar(ctx: Context) {
     return;
   }
 
-  // Find vaquita where user is CREATOR
+  // Find vaquita where user is CREATOR (completed = goal reached, not yet withdrawn)
   const vaquita = await Vaquita.findOne({
     creatorId: user._id,
-    status: "active",
+    status: "completed", // Only allow withdrawal when goal is reached
   });
 
   if (!vaquita) {
+    // Check if they have an active vaquita that hasn't reached the goal yet
+    const activeVaquita = await Vaquita.findOne({
+      creatorId: user._id,
+      status: "active",
+    });
+
+    if (activeVaquita) {
+      const remaining = activeVaquita.goalAmount - activeVaquita.currentAmount;
+      await ctx.reply(
+        `⏳ Tu vaquita "${activeVaquita.name}" aún no alcanza la meta.\n\n` +
+          `💰 Pool: $${activeVaquita.currentAmount.toFixed(2)} / $${activeVaquita.goalAmount.toFixed(2)}\n` +
+          `❌ Faltan: $${remaining.toFixed(2)} USDC`
+      );
+      return;
+    }
+
     await ctx.reply(
-      "❌ No tienes ninguna vaquita activa que hayas creado.\n\n" +
-        "Solo el creador puede retirar los fondos."
+      "❌ No tienes ninguna vaquita completada para retirar.\n\n" +
+        "Usa /crear para crear una nueva vaquita."
     );
     return;
   }
 
-  // Check if goal reached
-  if (vaquita.currentAmount < vaquita.goalAmount) {
-    const remaining = vaquita.goalAmount - vaquita.currentAmount;
-    await ctx.reply(
-      `⏳ *Aún no se alcanza la meta*\n\n` +
-        `📝 *Vaquita:* ${escapeMarkdown(vaquita.name)}\n` +
-        `💰 *Pool:* ${escapeMarkdown(formatUSDC(vaquita.currentAmount))}\n` +
-        `🎯 *Meta:* ${escapeMarkdown(formatUSDC(vaquita.goalAmount))}\n` +
-        `❌ *Faltan:* ${escapeMarkdown(formatUSDC(remaining))}`,
-      { parse_mode: "MarkdownV2" }
-    );
-    return;
-  }
-
-  // Open Mini App to execute withdrawal
+  // Open Mini App to execute withdrawal (vaquita is already "completed" so goal was reached)
   const keyboard = new InlineKeyboard().webApp(
     "💸 Retirar Fondos",
     `${config.webappUrl}/#/withdraw?` +

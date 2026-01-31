@@ -12,7 +12,7 @@ export interface IVaquita extends Document {
   poolPlayerId?: string;
   poolWalletAddress?: string;
   // Status
-  status: "active" | "completed" | "cancelled";
+  status: "active" | "completed" | "cancelled" | "withdrawn";
   // Timestamps
   createdAt: Date;
   updatedAt: Date;
@@ -61,7 +61,7 @@ const VaquitaSchema = new Schema<IVaquita>(
     poolWalletAddress: String,
     status: {
       type: String,
-      enum: ["active", "completed", "cancelled"],
+      enum: ["active", "completed", "cancelled", "withdrawn"],
       default: "active",
     },
     completedAt: Date,

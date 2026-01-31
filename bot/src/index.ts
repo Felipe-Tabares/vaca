@@ -303,11 +303,21 @@ async function main() {
       }
 
       // Update vaquita balance
-      const vaquita = await Vaquita.findByIdAndUpdate(
+      let vaquita = await Vaquita.findByIdAndUpdate(
         contribution.vaquitaId,
         { $inc: { currentAmount: amount } },
         { new: true }
       );
+
+      // Check if goal has been reached - mark as completed
+      if (vaquita && vaquita.currentAmount >= vaquita.goalAmount && vaquita.status === "active") {
+        console.log(`🎉 Vaquita "${vaquita.name}" reached goal! Marking as completed.`);
+        vaquita = await Vaquita.findByIdAndUpdate(
+          vaquita._id,
+          { status: "completed" },
+          { new: true }
+        );
+      }
 
       res.json({ success: true, contribution, vaquita });
     } catch (error) {
@@ -383,8 +393,8 @@ async function main() {
         vaquita.currentAmount
       );
 
-      // Mark vaquita as completed
-      vaquita.status = "completed";
+      // Mark vaquita as withdrawn (funds have been transferred)
+      vaquita.status = "withdrawn";
       vaquita.completedAt = new Date();
       await vaquita.save();
 
